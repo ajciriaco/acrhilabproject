@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Priority Scheduling</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    /* (same style as your original) */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background-color: #FAF5F1;
+      align-items: center;
+    }
+    .navbar {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      background-color: #E0DBD8;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      padding: 15px 0;
+      text-align: left;
+      font-size: 20px;
+    }
+    .navbar a {
+      margin: 0 15px;
+      text-decoration: none;
+      color: #292F36;
+    }
+    h1 {
+      margin-top: 100px;
+      text-align: center;
+      color: #292F36;
+    }
+    input[type="number"] {
+      padding: 10px;
+      border: 1px solid #8F7A6E;
+      border-radius: 5px;
+      width: 100%;
+      max-width: 250px;
+      margin-top: 5px;
+      margin-bottom: 15px;
+      font-size: 16px;
+    }
+    label {
+      margin-left: 50px;
+    }
+    table {
+      width: 80%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      margin-left: 50px;
+    }
+    th, td {
+      border: 1px solid #8F7A6E;
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background-color: #E0DBD8;
+    }
+    .gantt-chart {
+      display: flex;
+      margin-top: 20px;
+      margin-bottom: 50px;
+    }
+    .gantt-bar {
+      height: 30px;
+      background-color: #A41F13;
+      margin-right: 5px;
+      color: #FAF5F1;
+      text-align: center;
+      line-height: 30px;
+    }
+    .form-container {
+      margin-bottom: 20px;
+    }
+    button {
+      padding: 10px 10px;
+      margin: 10px;
+      border: none;
+      border-radius: 5px;
+      background-color: #A41F13;
+      color: white;
+      cursor: pointer;
+      font-size: 16px;
+      text-align: center;
+      width: 100px;
+      margin-left: 50px;
+    }
+    button:hover {
+      background-color: #8F7A6E;
+    }
+    .button-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+  </style>
+</head>
+
+<body>
+    <div class="navbar">
+        <a href="algorithm.html"><i class="fas fa-home"></i> Home</a>
+        <a href="preemtive.html"><i class="fas fa-calendar-alt"></i> Preemtive</a>
+        <a href="nonpre.html"><i class="fas fa-cog"></i> Non-preemtive</a>
+    </div>
+
+  <h1>Priority Scheduling</h1>
+
+  <div class="form-container">
+    <label for="numProcesses">Number of Processes:</label>
+    <input type="number" id="numProcesses" min="1" onchange="createInputFields()" />
+    <div id="processInputs"></div>
+
+    <!-- REMOVED Time Quantum input -->
+    
+    <button onclick="calculatePriorityScheduling()">Calculate</button>
+  </div>
+
+  <div id="result"></div>
+
+  <script>
+    let originalProcesses = []; // New: store original processes separately
+  
+    function createInputFields() {
+      const numProcesses = document.getElementById('numProcesses').value;
+      const processInputs = document.getElementById('processInputs');
+      processInputs.innerHTML = '';
+  
+      for (let i = 0; i < numProcesses; i++) {
+        processInputs.innerHTML += `
+          <div>
+            <label>Process ID ${i + 1}:</label>
+            <input type="number" id="arrivalTime${i}" placeholder="Arrival Time" required />
+            <input type="number" id="burstTime${i}" placeholder="Burst Time" required />
+            <input type="number" id="priority${i}" placeholder="Priority" required />
+          </div>
+        `;
+      }
+    }
+  
+    function calculatePriorityScheduling() {
+      const numProcesses = parseInt(document.getElementById('numProcesses').value);
+  
+      let processes = [];
+  
+      originalProcesses = []; // Reset before calculation
+  
+      for (let i = 0; i < numProcesses; i++) {
+        const arrivalTime = parseInt(document.getElementById(`arrivalTime${i}`).value);
+        const burstTime = parseInt(document.getElementById(`burstTime${i}`).value);
+        const priority = parseInt(document.getElementById(`priority${i}`).value);
+  
+        if (isNaN(arrivalTime) || isNaN(burstTime) || isNaN(priority)) {
+          alert('Please fill in all input fields.');
+          return;
+        }
+  
+        let process = {
+          id: i + 1,
+          arrivalTime,
+          burstTime,
+          originalBurstTime: burstTime, // New: Keep original burst time
+          priority,
+          completionTime: 0,
+          waitingTime: 0,
+          turnaroundTime: 0,
+          startTime: 0
+        };
+  
+        processes.push(process);
+        originalProcesses.push({ ...process }); // Store separately
+      }
+  
+      processes.sort((a, b) => {
+        if (a.arrivalTime === b.arrivalTime) {
+          return a.priority - b.priority;
+        }
+        return a.arrivalTime - b.arrivalTime;
+      });
+  
+      let time = 0;
+      let completed = 0;
+      let ganttChartData = [];
+  
+      while (completed < numProcesses) {
+        let idx = -1;
+        let highestPriority = Infinity;
+  
+        for (let i = 0; i < numProcesses; i++) {
+          if (processes[i].arrivalTime <= time && processes[i].burstTime > 0) {
+            if (processes[i].priority < highestPriority) {
+              highestPriority = processes[i].priority;
+              idx = i;
+            }
+          }
+        }
+  
+        if (idx === -1) {
+          time++;
+        } else {
+          processes[idx].startTime = time;
+          time += processes[idx].burstTime;
+          processes[idx].completionTime = time;
+          processes[idx].turnaroundTime = processes[idx].completionTime - processes[idx].arrivalTime;
+          processes[idx].waitingTime = processes[idx].turnaroundTime - processes[idx].originalBurstTime;
+          ganttChartData.push({ id: processes[idx].id, start: processes[idx].startTime, end: processes[idx].completionTime });
+          processes[idx].burstTime = 0;
+          completed++;
+        }
+      }
+  
+      // Now update originalProcesses using the finished data
+      originalProcesses.forEach(op => {
+        const updated = processes.find(p => p.id === op.id);
+        if (updated) {
+          op.completionTime = updated.completionTime;
+          op.turnaroundTime = updated.turnaroundTime;
+          op.waitingTime = updated.waitingTime;
+        }
+      });
+  
+      displayResults(originalProcesses, ganttChartData);
+    }
+  
+    function displayResults(processes, ganttChartData) {
+      const resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = '';
+  
+      let tableHTML = `
+      <table>
+        <tr>
+          <th>Process ID</th>
+          <th>Arrival Time</th>
+          <th>Burst Time</th>
+          <th>Priority</th>
+          <th>Completion Time</th>
+          <th>Turnaround Time</th>
+          <th>Waiting Time</th>
+        </tr>`;
+  
+      processes.forEach(p => {
+        tableHTML += `
+          <tr>
+            <td>${p.id}</td>
+            <td>${p.arrivalTime}</td>
+            <td>${p.originalBurstTime}</td>
+            <td>${p.priority}</td>
+            <td>${p.completionTime}</td>
+            <td>${p.turnaroundTime}</td>
+            <td>${p.waitingTime}</td>
+          </tr>`;
+      });
+  
+      const avgWT = processes.reduce((acc, p) => acc + p.waitingTime, 0) / processes.length;
+      const avgTAT = processes.reduce((acc, p) => acc + p.turnaroundTime, 0) / processes.length;
+  
+      tableHTML += `</table>
+      <p style="margin-left:50px;">Average Waiting Time: ${avgWT.toFixed(2)}</p>
+      <p style="margin-left:50px;">Average Turnaround Time: ${avgTAT.toFixed(2)}</p>`;
+  
+      // Gantt Chart
+      let ganttHTML = `<p style="margin-left:50px;"><strong>GANTT CHART:</strong></p>
+      <div style="margin-left:50px; display:flex; align-items:center;">`;
+  
+      ganttHTML += `<div style="text-align: center;">
+          <div style="width:0px;">0</div>
+        </div>`;
+  
+      ganttChartData.forEach(p => {
+        ganttHTML += `
+          <div style="text-align: center;">
+            <div class="gantt-bar" style="width:${(p.end - p.start) * 20}px;">P${p.id}</div>
+          </div>`;
+      });
+  
+      ganttHTML += `</div>
+      <div style="margin-left:50px; display:flex; font-size:12px; margin-top:5px;">`;
+  
+      ganttHTML += `<div style="width:0px; text-align:left;">0</div>`;
+  
+      ganttChartData.forEach((p, i) => {
+        ganttHTML += `<div style="width:${(p.end - p.start) * 20}px; text-align: right;">${p.end}</div>`;
+      });
+  
+      ganttHTML += `</div>`;
+  
+      resultDiv.innerHTML = tableHTML + ganttHTML;
+    }
+  </script>  
+
+</body>
+</html>

@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Virtual Management - Architecture Laboratory</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+  <style>
+    /* Global styles */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background-color: #FAF5F1;
+    }
+    .navbar {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      background-color: #E0DBD8;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      padding: 15px 0;
+      text-align: left;
+      font-size: 20px;
+    }
+    .navbar a {
+      margin: 0 15px;
+      text-decoration: none;
+      color: #292F36;
+    }
+    h1 {
+      text-align: center;
+      margin-top: 100px;
+      margin-bottom: 30px;
+      color: #292F36;
+    }
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 20px;
+    }
+    .column {
+      flex: 1;
+      min-width: 300px;
+      margin: 10px;
+      padding: 20px;
+      background-color: #E0DBD8;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .column.hide {
+      display: none;
+    }
+    h2 {
+      color: #8F7A6E;
+      text-align: center;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      color: #292F36;
+    }
+    input[type="number"] {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border: 1px solid #8F7A6E;
+      border-radius: 5px;
+    }
+    button {
+      background-color: #A41F13;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin-top: 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      width: 100%;
+    }
+    button:hover {
+      background-color: #8F7A6E;
+    }
+    .alloc-block {
+      background-color: #FAF5F1;
+      border: 2px solid #292F36;
+      border-radius: 5px;
+      margin-top: 10px;
+      padding: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+    .progress {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      background-color: #A41F13;
+      transition: width 2s ease;
+      z-index: 0;
+    }
+    .alloc-block span {
+      position: relative;
+      z-index: 1;
+      color: #292F36;
+      font-weight: bold;
+    }
+    .fully-allocated {
+      background-color: #8F7A6E !important;
+      color: white;
+    }
+    .allocated {
+      background-color: #E0DBD8 !important;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    table, th, td {
+      border: 1px solid #292F36;
+    }
+    th, td {
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background-color: #8F7A6E;
+      color: white;
+    }
+    .placeholder-text {
+      text-align: center;
+      color: #8F7A6E;
+      margin-top: 30px;
+      font-size: 18px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="navbar">
+    <a href="algorithm.html"><i class="fas fa-home"></i> Home</a>
+    <a href="scheduling.html"><i class="fas fa-calendar-alt"></i> Scheduling</a>
+    <a href="virtualmngmt.html"><i class="fas fa-cog"></i> Virtual Management</a>
+  </div>
+
+  <h1>VIRTUAL MEMORY MANAGEMENT</h1>
+
+  <div class="container">
+    <!-- Configuration -->
+    <div class="column" id="configColumn">
+      <h2>Configure Blocks</h2>
+      <label for="numBlocks">Number of Blocks:</label>
+      <input type="number" id="numBlocks" value="4" min="1">
+      <div id="blockConfigs"></div>
+      <button id="generateBlocksBtn">Generate Blocks</button>
+      <button id="resetBtn">Reset Simulation</button>
+    </div>
+
+    <!-- Allocate File -->
+    <div class="column hide" id="allocateFileColumn">
+      <h2>Allocate File</h2>
+      <label for="fileSize">File Size (MB):</label>
+      <input type="number" id="fileSize" placeholder="Enter file size">
+      <button id="allocateFileBtn">Allocate</button>
+      <h2>Allocated Files</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>File ID</th>
+            <th>Size</th>
+            <th>Block(s)</th>
+          </tr>
+        </thead>
+        <tbody id="filesTable"></tbody>
+      </table>
+    </div>
+
+    <!-- Allocated Area -->
+    <div class="column hide" id="allocAreaColumn">
+      <h2>Memory Blocks</h2>
+      <div id="allocArea">
+        <p class="placeholder-text">Configure memory blocks to begin.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- (SCRIPT YOU GAVE) ---
+    // Your entire script goes here
+    // I will paste it exactly without modification because you said "script function" provided.
+    let freeBlocks = [];
+    let allocatedFiles = [];
+    let fileCounter = 1;
+
+    const allocAreaDiv = document.getElementById('allocArea');
+    const filesTableBody = document.getElementById('filesTable');
+    const allocateFileColumn = document.getElementById('allocateFileColumn');
+    const allocAreaColumn = document.getElementById('allocAreaColumn');
+    const configColumn = document.getElementById('configColumn');
+
+    function initializeBlockConfigs() {
+      const numBlocks = parseInt(document.getElementById('numBlocks').value);
+      const blockConfigsDiv = document.getElementById('blockConfigs');
+      blockConfigsDiv.innerHTML = "";
+      for (let i = 0; i < numBlocks; i++) {
+        const blockContainer = document.createElement('div');
+        blockContainer.className = 'block-config-item';
+        
+        const label = document.createElement('label');
+        label.textContent = `Block ${i + 1} (MB):`;
+        label.htmlFor = `block-capacity-${i+1}`;
+        
+        const input = document.createElement('input');
+        input.type = "number";
+        input.id = `block-capacity-${i+1}`;
+        input.min = 1;
+        input.placeholder = `Capacity in MB`;
+        input.value = 100 * (i + 1);
+        input.className = "block-capacity";
+        
+        blockContainer.appendChild(label);
+        blockContainer.appendChild(input);
+        blockConfigsDiv.appendChild(blockContainer);
+      }
+    }
+
+    const generateBlocksBtn = document.getElementById('generateBlocksBtn');
+    generateBlocksBtn.addEventListener('click', () => {
+      freeBlocks = [];
+      allocAreaDiv.innerHTML = "";
+
+      const capacityInputs = document.querySelectorAll('.block-capacity');
+      if (capacityInputs.length === 0) {
+          alert("Please specify the number of blocks first.");
+          return;
+      }
+
+      let totalCapacity = 0;
+      capacityInputs.forEach((input, index) => {
+        const capacity = parseInt(input.value);
+        if (isNaN(capacity) || capacity <= 0) {
+             alert(`Please enter a valid positive capacity for Block ${index + 1}.`);
+             return;
+        }
+        const blockId = 'block-' + (index + 1);
+        freeBlocks.push({ id: blockId, capacity: capacity, initialCapacity: capacity });
+        totalCapacity += capacity;
+
+        const blockDiv = document.createElement('div');
+        blockDiv.className = 'alloc-block';
+        blockDiv.id = blockId;
+        blockDiv.innerHTML = `<span>Block ${index + 1}: ${capacity} MB Free</span>`;
+        blockDiv.dataset.currentCapacity = capacity;
+        blockDiv.dataset.initialCapacity = capacity;
+        allocAreaDiv.appendChild(blockDiv);
+      });
+
+      if (freeBlocks.length !== capacityInputs.length) {
+          allocAreaDiv.innerHTML = `<p class="placeholder-text">Invalid configuration. Please correct block capacities.</p>`;
+          return;
+      }
+
+      allocateFileColumn.classList.remove('hide');
+      allocAreaColumn.classList.remove('hide');
+    });
+
+    window.onload = function () {
+      initializeBlockConfigs();
+      allocAreaDiv.innerHTML = `<p class="placeholder-text">Configure memory blocks to begin.</p>`;
+    };
+
+    document.getElementById('numBlocks').addEventListener('change', initializeBlockConfigs);
+
+    function animateProgress(blockDiv, allocatedSize, totalBlockCapacity, callback) {
+        const allocationPercentage = (allocatedSize / totalBlockCapacity) * 100;
+        let progressDiv = document.createElement('div');
+        progressDiv.className = 'progress';
+        progressDiv.style.width = '0%';
+        blockDiv.appendChild(progressDiv);
+        progressDiv.offsetWidth;
+        progressDiv.style.width = allocationPercentage + "%";
+        setTimeout(() => {
+            callback();
+        }, 2100);
+    }
+
+    allocateFileBtn.addEventListener('click', async () => {
+      const fileSize = parseInt(document.getElementById('fileSize').value);
+      if (isNaN(fileSize) || fileSize <= 0) {
+        alert("Please enter a valid file size (positive number).");
+        return;
+      }
+
+      let exactFitBlock = freeBlocks.find(block => block.capacity === fileSize);
+
+      if (exactFitBlock) {
+        const blockDiv = document.getElementById(exactFitBlock.id);
+        const blockIndex = freeBlocks.findIndex(block => block.id === exactFitBlock.id);
+        
+        await new Promise(resolve => {
+          animateProgress(blockDiv, fileSize, exactFitBlock.initialCapacity, () => {
+            exactFitBlock.capacity = 0;
+            blockDiv.classList.add('fully-allocated');
+            blockDiv.innerHTML = `<span>File ${fileCounter}: ${fileSize} MB</span>`;
+            allocatedFiles.push({ 
+              fileId: fileCounter, 
+              size: fileSize, 
+              blockIds: [exactFitBlock.id] 
+            });
+            fileCounter++;
+            updateFilesTable();
+            resolve();
+          });
+        });
+        
+        document.getElementById('fileSize').value = '';
+        return;
+      }
+      
+      let remainingSize = fileSize;
+      const usedBlocks = [];
+      const allocationsPerBlock = [];
+
+      const totalFreeSpace = freeBlocks.reduce((sum, block) => sum + block.capacity, 0);
+      if (totalFreeSpace < fileSize) {
+        alert("Not enough total free space to allocate the file!");
+        return;
+      }
+
+      const sortedBlocks = [...freeBlocks].sort((a, b) => a.id.localeCompare(b.id));
+
+      for (const block of sortedBlocks) {
+        if (remainingSize <= 0) break;
+
+        const blockDiv = document.getElementById(block.id);
+        const currentBlockCapacity = block.capacity;
+
+        if (currentBlockCapacity > 0) {
+          const allocatedSize = Math.min(currentBlockCapacity, remainingSize);
+          block.capacity -= allocatedSize;
+          remainingSize -= allocatedSize;
+          allocationsPerBlock.push({ blockId: block.id, allocated: allocatedSize, initial: block.initialCapacity });
+          usedBlocks.push(block.id);
+          blockDiv.dataset.currentCapacity = block.capacity;
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
+      }
+
+      for (const allocationInfo of allocationsPerBlock) {
+        const blockDiv = document.getElementById(allocationInfo.blockId);
+        const blockStateAfter = freeBlocks.find(b => b.id === allocationInfo.blockId).capacity;
+        const usedAfter = allocationInfo.initial - blockStateAfter;
+        const percentageUsed = (usedAfter / allocationInfo.initial) * 100;
+
+        let progressBar = blockDiv.querySelector('.progress');
+        if (!progressBar) {
+            progressBar = document.createElement('div');
+            progressBar.className = 'progress';
+            blockDiv.appendChild(progressBar);
+            const textSpan = blockDiv.querySelector('span');
+            if (textSpan) {
+              blockDiv.insertBefore(progressBar, textSpan);
+            } else {
+              blockDiv.appendChild(progressBar);
+            }
+        }
+
+        progressBar.offsetWidth;
+        progressBar.style.width = percentageUsed + "%";
+        await new Promise(resolve => setTimeout(resolve, 2100));
+
+        const blockObj = freeBlocks.find(b => b.id === allocationInfo.blockId);
+        const blockDivToUpdate = document.getElementById(allocationInfo.blockId);
+        const blockIndex = blockObj.id.replace('block-', '');
+
+        if (blockObj.capacity === 0) {
+          blockDivToUpdate.classList.add('fully-allocated');
+          blockDivToUpdate.innerHTML = `<span>File ${fileCounter}: ${allocationInfo.allocated} MB</span>`;
+        } else {
+          blockDivToUpdate.classList.add('allocated');
+          blockDivToUpdate.innerHTML = `<span>Block ${blockIndex}: ${blockObj.capacity} MB Free</span>`;
+        }
+      }
+
+      allocatedFiles.push({ fileId: fileCounter, size: fileSize, blockIds: usedBlocks });
+      updateFilesTable();
+      fileCounter++;
+      document.getElementById('fileSize').value = '';
+    });
+
+    function updateFilesTable() {
+      filesTableBody.innerHTML = "";
+      allocatedFiles.forEach(file => {
+        const tr = document.createElement('tr');
+        const blockList = file.blockIds.join(', ');
+        tr.innerHTML = `<td>${file.fileId}</td><td>${file.size} MB</td><td>${blockList}</td>`;
+        filesTableBody.appendChild(tr);
+      });
+    }
+
+    const resetBtn = document.getElementById('resetBtn');
+    resetBtn.addEventListener('click', () => {
+      if (!confirm("Are you sure you want to reset the simulation?")) {
+        return;
+      }
+      allocatedFiles = [];
+      fileCounter = 1;
+      filesTableBody.innerHTML = "";
+      freeBlocks = [];
+      allocAreaDiv.innerHTML = `<p class="placeholder-text">Configure memory blocks to begin.</p>`;
+      allocateFileColumn.classList.add('hide');
+      allocAreaColumn.classList.add('hide');
+      initializeBlockConfigs();
+      document.getElementById('numBlocks').value = 4;
+    });
+  </script>
+</body>
+</html>
