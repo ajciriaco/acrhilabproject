@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Virtual Management - Architecture Laboratory</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"/>
 
   <style>
     /* Global styles */
@@ -151,7 +151,7 @@
     <div class="column" id="configColumn">
       <h2>Configure Blocks</h2>
       <label for="numBlocks">Number of Blocks:</label>
-      <input type="number" id="numBlocks" value="4" min="1">
+      <input type="number" id="numBlocks" min="1" placeholder="Enter number of blocks">
       <div id="blockConfigs"></div>
       <button id="generateBlocksBtn">Generate Blocks</button>
       <button id="resetBtn">Reset Simulation</button>
@@ -186,9 +186,6 @@
   </div>
 
   <script>
-    // --- (SCRIPT YOU GAVE) ---
-    // Your entire script goes here
-    // I will paste it exactly without modification because you said "script function" provided.
     let freeBlocks = [];
     let allocatedFiles = [];
     let fileCounter = 1;
@@ -203,22 +200,22 @@
       const numBlocks = parseInt(document.getElementById('numBlocks').value);
       const blockConfigsDiv = document.getElementById('blockConfigs');
       blockConfigsDiv.innerHTML = "";
+      if (isNaN(numBlocks) || numBlocks <= 0) return;
       for (let i = 0; i < numBlocks; i++) {
         const blockContainer = document.createElement('div');
         blockContainer.className = 'block-config-item';
-        
+
         const label = document.createElement('label');
         label.textContent = `Block ${i + 1} (MB):`;
         label.htmlFor = `block-capacity-${i+1}`;
-        
+
         const input = document.createElement('input');
         input.type = "number";
         input.id = `block-capacity-${i+1}`;
         input.min = 1;
-        input.placeholder = `Capacity in MB`;
-        input.value = 100 * (i + 1);
+        input.placeholder = `Enter size in MB`;
         input.className = "block-capacity";
-        
+
         blockContainer.appendChild(label);
         blockContainer.appendChild(input);
         blockConfigsDiv.appendChild(blockContainer);
@@ -237,28 +234,25 @@
       }
 
       let totalCapacity = 0;
-      capacityInputs.forEach((input, index) => {
+      for (let i = 0; i < capacityInputs.length; i++) {
+        const input = capacityInputs[i];
         const capacity = parseInt(input.value);
         if (isNaN(capacity) || capacity <= 0) {
-             alert(`Please enter a valid positive capacity for Block ${index + 1}.`);
-             return;
+          alert(`Please enter a valid positive capacity for Block ${i + 1}.`);
+          return;
         }
-        const blockId = 'block-' + (index + 1);
+
+        const blockId = 'block-' + (i + 1);
         freeBlocks.push({ id: blockId, capacity: capacity, initialCapacity: capacity });
         totalCapacity += capacity;
 
         const blockDiv = document.createElement('div');
         blockDiv.className = 'alloc-block';
         blockDiv.id = blockId;
-        blockDiv.innerHTML = `<span>Block ${index + 1}: ${capacity} MB Free</span>`;
+        blockDiv.innerHTML = `<span>Block ${i + 1}: ${capacity} MB Free</span>`;
         blockDiv.dataset.currentCapacity = capacity;
         blockDiv.dataset.initialCapacity = capacity;
         allocAreaDiv.appendChild(blockDiv);
-      });
-
-      if (freeBlocks.length !== capacityInputs.length) {
-          allocAreaDiv.innerHTML = `<p class="placeholder-text">Invalid configuration. Please correct block capacities.</p>`;
-          return;
       }
 
       allocateFileColumn.classList.remove('hide');
@@ -266,7 +260,6 @@
     });
 
     window.onload = function () {
-      initializeBlockConfigs();
       allocAreaDiv.innerHTML = `<p class="placeholder-text">Configure memory blocks to begin.</p>`;
     };
 
@@ -296,28 +289,21 @@
 
       if (exactFitBlock) {
         const blockDiv = document.getElementById(exactFitBlock.id);
-        const blockIndex = freeBlocks.findIndex(block => block.id === exactFitBlock.id);
-        
         await new Promise(resolve => {
           animateProgress(blockDiv, fileSize, exactFitBlock.initialCapacity, () => {
             exactFitBlock.capacity = 0;
             blockDiv.classList.add('fully-allocated');
             blockDiv.innerHTML = `<span>File ${fileCounter}: ${fileSize} MB</span>`;
-            allocatedFiles.push({ 
-              fileId: fileCounter, 
-              size: fileSize, 
-              blockIds: [exactFitBlock.id] 
-            });
+            allocatedFiles.push({ fileId: fileCounter, size: fileSize, blockIds: [exactFitBlock.id] });
             fileCounter++;
             updateFilesTable();
             resolve();
           });
         });
-        
         document.getElementById('fileSize').value = '';
         return;
       }
-      
+
       let remainingSize = fileSize;
       const usedBlocks = [];
       const allocationsPerBlock = [];
@@ -332,7 +318,6 @@
 
       for (const block of sortedBlocks) {
         if (remainingSize <= 0) break;
-
         const blockDiv = document.getElementById(block.id);
         const currentBlockCapacity = block.capacity;
 
@@ -355,15 +340,9 @@
 
         let progressBar = blockDiv.querySelector('.progress');
         if (!progressBar) {
-            progressBar = document.createElement('div');
-            progressBar.className = 'progress';
-            blockDiv.appendChild(progressBar);
-            const textSpan = blockDiv.querySelector('span');
-            if (textSpan) {
-              blockDiv.insertBefore(progressBar, textSpan);
-            } else {
-              blockDiv.appendChild(progressBar);
-            }
+          progressBar = document.createElement('div');
+          progressBar.className = 'progress';
+          blockDiv.appendChild(progressBar);
         }
 
         progressBar.offsetWidth;
@@ -371,15 +350,13 @@
         await new Promise(resolve => setTimeout(resolve, 2100));
 
         const blockObj = freeBlocks.find(b => b.id === allocationInfo.blockId);
-        const blockDivToUpdate = document.getElementById(allocationInfo.blockId);
         const blockIndex = blockObj.id.replace('block-', '');
-
         if (blockObj.capacity === 0) {
-          blockDivToUpdate.classList.add('fully-allocated');
-          blockDivToUpdate.innerHTML = `<span>File ${fileCounter}: ${allocationInfo.allocated} MB</span>`;
+          blockDiv.classList.add('fully-allocated');
+          blockDiv.innerHTML = `<span>File ${fileCounter}: ${allocationInfo.allocated} MB</span>`;
         } else {
-          blockDivToUpdate.classList.add('allocated');
-          blockDivToUpdate.innerHTML = `<span>Block ${blockIndex}: ${blockObj.capacity} MB Free</span>`;
+          blockDiv.classList.add('allocated');
+          blockDiv.innerHTML = `<span>Block ${blockIndex}: ${blockObj.capacity} MB Free</span>`;
         }
       }
 
@@ -401,9 +378,7 @@
 
     const resetBtn = document.getElementById('resetBtn');
     resetBtn.addEventListener('click', () => {
-      if (!confirm("Are you sure you want to reset the simulation?")) {
-        return;
-      }
+      if (!confirm("Are you sure you want to reset the simulation?")) return;
       allocatedFiles = [];
       fileCounter = 1;
       filesTableBody.innerHTML = "";
@@ -412,7 +387,7 @@
       allocateFileColumn.classList.add('hide');
       allocAreaColumn.classList.add('hide');
       initializeBlockConfigs();
-      document.getElementById('numBlocks').value = 4;
+      document.getElementById('numBlocks').value = '';
     });
   </script>
 </body>
